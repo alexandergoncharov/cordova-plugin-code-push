@@ -20,8 +20,10 @@ NSDate* lastResignedDate;
 NSString* const DeploymentKeyPreference = @"codepushdeploymentkey";
 NSString* const PublicKeyPreference = @"codepushpublickey";
 StatusReport* rollbackStatusReport = nil;
+NSString* specifiedServerPath = @"";
 
 - (void)getBinaryHash:(CDVInvokedUrlCommand *)command {
+    NSLog(@"qq getBinaryHash");
     [self.commandDelegate runInBackground:^{
         CDVPluginResult* pluginResult = nil;
         NSString* binaryHash = [CodePushPackageManager getCachedBinaryHash];
@@ -46,6 +48,7 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)getPackageHash:(CDVInvokedUrlCommand *)command {
+    NSLog(@"qq getPackageHash");
     [self.commandDelegate runInBackground:^{
         NSString *path = [command argumentAtIndex:0 withDefault:nil andClass:[NSString class]];
         CDVPluginResult *pluginResult = nil;
@@ -73,8 +76,10 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)getPublicKey:(CDVInvokedUrlCommand *)command {
+    NSLog(@"qq getPublicKey");
     [self.commandDelegate runInBackground:^{
         NSString *publicKey = ((CDVViewController *) self.viewController).settings[PublicKeyPreference];
+        NSLog(@"qq %@publicKey", publicKey);
         CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
                                                             messageAsString:publicKey];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
@@ -82,6 +87,7 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)decodeSignature:(CDVInvokedUrlCommand *)command {
+    NSLog(@"qq decodeSignature");
     [self.commandDelegate runInBackground:^{
         NSString *publicKey = [command argumentAtIndex:0 withDefault:nil andClass:[NSString class]];
 
@@ -115,7 +121,9 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)handleUnconfirmedInstall:(BOOL)navigate {
+    NSLog(@"qq here is handleUnconfirmedInstall");
     if ([CodePushPackageManager installNeedsConfirmation]) {
+        NSLog(@"qq install needs confirm");
         /* save reporting status */
         CodePushPackageMetadata* currentMetadata = [CodePushPackageManager getCurrentPackageMetadata];
         rollbackStatusReport = [[StatusReport alloc] initWithStatus:UPDATE_ROLLED_BACK
@@ -125,6 +133,7 @@ StatusReport* rollbackStatusReport = nil;
         [CodePushPackageManager clearInstallNeedsConfirmation];
         [CodePushPackageManager revertToPreviousVersion];
         if (navigate) {
+            NSLog(@"qq here is navigate is true");
             CodePushPackageMetadata* currentMetadata = [CodePushPackageManager getCurrentPackageMetadata];
             bool revertSuccess = (nil != currentMetadata && [self loadPackage:currentMetadata.localPath]);
             if (!revertSuccess) {
@@ -136,6 +145,7 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)notifyApplicationReady:(CDVInvokedUrlCommand *)command {
+    NSLog(@"qq notifyApplicationReady");
     [self.commandDelegate runInBackground:^{
         if ([CodePushPackageManager isBinaryFirstRun]) {
             // Report first run of a store version app
@@ -148,6 +158,7 @@ StatusReport* rollbackStatusReport = nil;
                                                              andDeploymentKey:deploymentKey];
             [CodePushReportingManager reportStatus:statusReport
                                        withWebView:self.webView];
+            NSLog(@"qq notifyApplicationReady binary first run");
         } else if ([CodePushPackageManager installNeedsConfirmation]) {
             // Report CodePush update installation that has not been confirmed yet
             CodePushPackageMetadata* currentMetadata = [CodePushPackageManager getCurrentPackageMetadata];
@@ -159,16 +170,19 @@ StatusReport* rollbackStatusReport = nil;
                                     withWebView:self.webView];
         } else if (rollbackStatusReport) {
             // Report a CodePush update that rolled back
+            NSLog(@"qq notifyApplicationReady Report a CodePush update that rolled back");
             [CodePushReportingManager reportStatus:rollbackStatusReport
                                        withWebView:self.webView];
             rollbackStatusReport = nil;
         } else if ([CodePushReportingManager hasFailedReport]) {
+            NSLog(@"qq notifyApplicationReady Previous status report failed, so try it again");
             // Previous status report failed, so try it again
             [CodePushReportingManager reportStatus:[CodePushReportingManager getAndClearFailedReport]
                                        withWebView:self.webView];
         }
 
         // Mark the update as confirmed and not requiring a rollback
+        NSLog(@"here is some clearing from notify application ready");
         [CodePushPackageManager clearInstallNeedsConfirmation];
         [CodePushPackageManager cleanOldPackage];
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
@@ -177,6 +191,7 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)install:(CDVInvokedUrlCommand *)command {
+    NSLog(@"qq install");
     [self.commandDelegate runInBackground:^{
         CDVPluginResult* pluginResult = nil;
 
@@ -214,6 +229,7 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)reportFailed:(CDVInvokedUrlCommand *)command {
+    NSLog(@"qq reportFailed");
     [self.commandDelegate runInBackground:^{
         NSDictionary* statusReportDict = [command argumentAtIndex:0 withDefault:nil andClass:[NSDictionary class]];
         if (statusReportDict) {
@@ -223,6 +239,7 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)reportSucceeded:(CDVInvokedUrlCommand *)command {
+    NSLog(@"qq reportSucceeded");
     [self.commandDelegate runInBackground:^{
         NSDictionary* statusReportDict = [command argumentAtIndex:0 withDefault:nil andClass:[NSDictionary class]];
         if (statusReportDict) {
@@ -232,6 +249,7 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)restartApplication:(CDVInvokedUrlCommand *)command {
+    NSLog(@"qq restart application");
     /* Callback before navigating */
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
@@ -251,11 +269,13 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void) markUpdate {
+    NSLog(@"qq markUpdate");
     didUpdate = YES;
     [CodePushPackageManager markInstallNeedsConfirmation];
 }
 
 - (void)preInstall:(CDVInvokedUrlCommand *)command {
+    NSLog(@"qq preInstall");
     [self.commandDelegate runInBackground:^{
         CDVPluginResult* pluginResult = nil;
 
@@ -266,6 +286,7 @@ StatusReport* rollbackStatusReport = nil;
         else {
             NSURL* URL = [self getStartPageURLForLocalPackage:location];
             if (URL) {
+                NSLog(@"preInstall url for start page local package%@", URL);
                 pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
             }
             else {
@@ -278,14 +299,17 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)getServerURL:(CDVInvokedUrlCommand *)command {
+    NSLog(@"qq getServerURL");
     [self sendResultForPreference:@"codepushserverurl" command:command];
 }
 
 - (void)getDeploymentKey:(CDVInvokedUrlCommand *)command {
+    NSLog(@"qq getDeploymentKey");
     [self sendResultForPreference:DeploymentKeyPreference command:command];
 }
 
 - (void)getNativeBuildTime:(CDVInvokedUrlCommand *)command {
+    NSLog(@"qq getNativeBuildTime");
     [self.commandDelegate runInBackground:^{
         NSString* timeStamp = [Utilities getApplicationTimestamp];
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:timeStamp];
@@ -294,6 +318,7 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)sendResultForPreference:(NSString*)preferenceName command:(CDVInvokedUrlCommand*)command {
+    NSLog(@"qq sendResultForPreference");
     [self.commandDelegate runInBackground:^{
         NSString* preferenceValue = ((CDVViewController *)self.viewController).settings[preferenceName];
         // length of NIL is zero
@@ -309,13 +334,16 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)dealloc {
+    NSLog(@"qq dealloc");
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void)clearDeploymentsIfBinaryUpdated {
+    NSLog(@"qq here is clear deploy if updated binary");
     // check if we have a deployed package
     CodePushPackageMetadata* deployedPackageMetadata = [CodePushPackageManager getCurrentPackageMetadata];
     if (deployedPackageMetadata) {
+        NSLog(@"qq here is a new deploy belike so try clear it");
         NSString* deployedPackageNativeBuildTime = deployedPackageMetadata.nativeBuildTime;
         NSString* applicationBuildTime = [Utilities getApplicationTimestamp];
 
@@ -324,8 +352,10 @@ StatusReport* rollbackStatusReport = nil;
 
         if (deployedPackageNativeBuildTime != nil && applicationBuildTime != nil &&
             deployedPackageVersion != nil && applicationVersion != nil) {
+            NSLog(@"qq first condition to new deploy");
             if (![deployedPackageNativeBuildTime isEqualToString: applicationBuildTime] ||
                 ![deployedPackageVersion isEqualToString: applicationVersion]) {
+                NSLog(@"qq here is clear from code-push");
                 // package version is incompatible with installed native version
                 [CodePushPackageManager cleanDeployments];
                 [CodePushPackageManager clearFailedUpdates];
@@ -338,19 +368,25 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)navigateToLocalDeploymentIfExists {
+    NSLog(@"qq navigateToLocalDeploymentIfExists");
     CodePushPackageMetadata* deployedPackageMetadata = [CodePushPackageManager getCurrentPackageMetadata];
+    if (deployedPackageMetadata) {
+        NSLog(@"navigate to local deployment path: %@", deployedPackageMetadata.localPath);
+    }
     if (deployedPackageMetadata && deployedPackageMetadata.localPath) {
         [self redirectStartPageToURL: deployedPackageMetadata.localPath];
     }
 }
 
 - (void)pluginInitialize {
+    NSLog(@"qq pluginInitialize");
     // register for "on resume", "on pause" notifications
     [self clearDeploymentsIfBinaryUpdated];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationWillEnterForeground) name:UIApplicationWillEnterForegroundNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationWillResignActive) name:UIApplicationWillResignActiveNotification object:nil];
     InstallOptions* pendingInstall = [CodePushPackageManager getPendingInstall];
     if (!pendingInstall) {
+        NSLog(@"qq pluginInitialize pending install");
         [self handleUnconfirmedInstall:NO];
     }
 
@@ -358,11 +394,13 @@ StatusReport* rollbackStatusReport = nil;
     // handle both ON_NEXT_RESUME and ON_NEXT_RESTART - the application might have been killed after transitioning to the background
     if (pendingInstall && (pendingInstall.installMode == ON_NEXT_RESTART || pendingInstall.installMode == ON_NEXT_RESUME)) {
         [self markUpdate];
+        NSLog(@"qq pluginInitialize here is clear pending install");
         [CodePushPackageManager clearPendingInstall];
     }
 }
 
 - (void)applicationWillEnterForeground {
+    NSLog(@"qq application will entered foreground");
     InstallOptions* pendingInstall = [CodePushPackageManager getPendingInstall];
     // calculate the duration that the app was in the background
     long durationInBackground = lastResignedDate ? [[NSDate date] timeIntervalSinceDate:lastResignedDate] : 0;
@@ -381,11 +419,13 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)applicationWillResignActive {
+    NSLog(@"qq applicationWillResignActive");
     // Save the current time so that when the app is later resumed, we can detect how long it was in the background
     lastResignedDate = [NSDate date];
 }
 
 - (BOOL)loadPackage:(NSString*)packageLocation {
+    NSLog(@"qq loadPackage: %@packageLocation", packageLocation);
     NSURL* URL = [self getStartPageURLForLocalPackage:packageLocation];
     if (URL) {
         [self loadURL:URL];
@@ -396,13 +436,16 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)loadURL:(NSURL*)url {
+    NSLog(@"qq loadURL: %@url", url);
     // In order to make use of the "modern" Cordova platform, while still
     // maintaining back-compat with Cordova iOS 3.9.0, we need to conditionally
     // use the WebViewEngine for performing navigations only if the host app
     // is running 4.0.0+, and fallback to directly using the WebView otherwise.
 #ifdef __CORDOVA_4_0_0
+    NSLog(@"qq!!! here is loadRequest5");
     [self.webViewEngine loadRequest:[NSURLRequest requestWithURL:url]];
 #else
+    NSLog(@"qq!!! here is loadRequest6");
     [(UIWebView*)self.webView loadRequest:[NSURLRequest requestWithURL:url]];
 #endif
 }
@@ -411,14 +454,25 @@ StatusReport* rollbackStatusReport = nil;
     NSString * webViewEngineClass = NSStringFromClass([webViewEngine class]);
     SEL setServerBasePath = NSSelectorFromString(@"setServerBasePath:");
     if ([webViewEngineClass  isEqual: @"CDVWKWebViewEngine"] && [webViewEngine respondsToSelector:setServerBasePath]) {
+        NSLog(@"qq hasIonicWebViewEngine true");
         return true;
     } else {
+        NSLog(@"qq hasIonicWebViewEngine false");
         return false;
     }
 }
 
 + (void) setServerBasePath:(NSString*)serverPath webView:(id<CDVWebViewEngineProtocol>) webViewEngine {
+    NSLog(@"qq setServerBasePath: %@", serverPath);
+    NSLog(@"rr specified: %@", specifiedServerPath);
     if ([CodePush hasIonicWebViewEngine: webViewEngine]) {
+        if ([specifiedServerPath isEqualToString:@""]) {
+            specifiedServerPath = serverPath;
+        } else if (!([specifiedServerPath containsString:@"codepush"] && ![serverPath containsString:@"codepush"])) {
+            specifiedServerPath = serverPath;
+        } else {
+            return;
+        }
         SEL setServerBasePath = NSSelectorFromString(@"setServerBasePath:");
         NSMutableArray * urlPathComponents = [serverPath pathComponents].mutableCopy;
         [urlPathComponents removeLastObject];
@@ -434,20 +488,25 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)loadStoreVersion {
+    NSLog(@"qq loadStoreVersion");
     NSString* mainBundlePath = [[NSBundle mainBundle] bundlePath];
     NSString* configStartPage = [self getConfigLaunchUrl];
     NSArray* realLocationArray = @[mainBundlePath, @"www", configStartPage];
     NSString* mainPageLocation = [NSString pathWithComponents:realLocationArray];
+    NSLog(@"qq mainPageLocation %@location", mainPageLocation);
     if ([[NSFileManager defaultManager] fileExistsAtPath:mainPageLocation]) {
         NSURL* mainPagePath = [NSURL fileURLWithPath:mainPageLocation];
+        NSLog(@"qq loadStoreVersion mainPageLocation exists");
         [self loadURL:mainPagePath];
     }
 }
 
 - (NSString*)getConfigLaunchUrl
 {
+    NSLog(@"qq getConfigLaunchUrl");
     CDVConfigParser* delegate = [[CDVConfigParser alloc] init];
     NSString* configPath = [[NSBundle mainBundle] pathForResource:@"config" ofType:@"xml"];
+    NSLog(@"config path of launch url %@", configPath);
     NSURL* configUrl = [NSURL fileURLWithPath:configPath];
 
     NSXMLParser* configParser = [[NSXMLParser alloc] initWithContentsOfURL:configUrl];
@@ -458,12 +517,15 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (NSURL *)getStartPageURLForLocalPackage:(NSString*)packageLocation {
+    NSLog(@"qq getStartPageURLForLocalPackage");
     if (packageLocation) {
         NSString* startPage = [self getConfigLaunchUrl];
         NSString* libraryLocation = [NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0];
         NSArray* realLocationArray = @[libraryLocation, @"NoCloud", packageLocation, @"www", startPage];
         NSString* realStartPageLocation = [NSString pathWithComponents:realLocationArray];
+        NSLog(@"qq getStartPageURLForLocalPackage real start page location: %@", realStartPageLocation);
         if ([[NSFileManager defaultManager] fileExistsAtPath:realStartPageLocation]) {
+            NSLog(@"qq getStartPageURLForLocalPackage %@", realStartPageLocation);
             return [NSURL fileURLWithPath:realStartPageLocation];
         }
     }
@@ -472,10 +534,13 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)redirectStartPageToURL:(NSString*)packageLocation{
+    NSLog(@"qq redirectStartPageToURL %@packageLocation", packageLocation);
     NSURL* URL = [self getStartPageURLForLocalPackage:packageLocation];
+    NSLog(@"redirectStartPageToURL URL: %@", URL);
     if (URL) {
         if ([CodePush hasIonicWebViewEngine: self.webViewEngine]) {
             [CodePush setServerBasePath:URL.path webView:self.webViewEngine];
+            //[self loadURL:URL];
         } else {
             ((CDVViewController *)self.viewController).startPage = [URL absoluteString];
         }
@@ -483,6 +548,7 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)isFailedUpdate:(CDVInvokedUrlCommand *)command {
+    NSLog(@"qq isFailedUpdate");
     [self.commandDelegate runInBackground:^{
         CDVPluginResult* result;
         NSString* packageHash = [command argumentAtIndex:0 withDefault:nil andClass:[NSString class]];
@@ -499,6 +565,7 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)isFirstRun:(CDVInvokedUrlCommand *)command {
+    NSLog(@"qq isFirstRun");
     [self.commandDelegate runInBackground:^{
         CDVPluginResult* result;
         BOOL isFirstRun = NO;
@@ -518,6 +585,7 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)isPendingUpdate:(CDVInvokedUrlCommand *)command {
+    NSLog(@"qq isPendingUpdate");
     [self.commandDelegate runInBackground:^{
         CDVPluginResult* result;
 
@@ -528,6 +596,7 @@ StatusReport* rollbackStatusReport = nil;
 }
 
 - (void)getAppVersion:(CDVInvokedUrlCommand *)command {
+    NSLog(@"qq getAppVersion");
     [self.commandDelegate runInBackground:^{
         NSString* version = [Utilities getApplicationVersion];
         CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:version];
