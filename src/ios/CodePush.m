@@ -469,6 +469,9 @@ StatusReport* rollbackStatusReport = nil;
         NSString* libraryLocation = [NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES) objectAtIndex:0];
         NSArray* realLocationArray = @[libraryLocation, @"NoCloud", packageLocation, @"www", startPage];
         NSString* realStartPageLocation = [NSString pathWithComponents:realLocationArray];
+        NSURLComponents *urlComponents = [[NSURLComponents alloc] initWithString:realStartPageLocation];
+        urlComponents.query = nil;
+        realStartPageLocation = urlComponents.string;
         if ([[NSFileManager defaultManager] fileExistsAtPath:realStartPageLocation]) {
             return [NSURL fileURLWithPath:realStartPageLocation];
         }
