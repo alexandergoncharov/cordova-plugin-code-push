@@ -49,9 +49,14 @@ var app = {
     },
     installSuccess: function () {
         console.log("Update installed.");
+        app.installCounter++;
         app.sendTestMessage("UPDATE_INSTALLED");
-        window.codePush.checkForUpdate(app.checkSuccess, app.checkError);
+        if (app.installCounter < app.maxInstalls) {
+            window.codePush.checkForUpdate(app.checkSuccess, app.checkError);
+        }
     },
+    installCounter: 0,
+    maxInstalls: 2,
     installError: function (error) {
         console.log("Install error.");
         app.sendTestMessage("INSTALL_ERROR");
